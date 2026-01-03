@@ -6,6 +6,12 @@ It supports:
 - Generating **feature key constants** (default)
 - Generating **typed feature helpers** (optional) that evaluate via `github.com/growthbook/growthbook-golang`
 
+## GrowthBook links
+
+- **GrowthBook docs**: [growthbook.io/docs](https://growthbook.io/docs)
+- **GrowthBook GitHub**: [github.com/growthbook/growthbook](https://github.com/growthbook/growthbook)
+- **GrowthBook Go SDK**: [github.com/growthbook/growthbook-golang](https://github.com/growthbook/growthbook-golang)
+
 ## Install
 
 ```bash
