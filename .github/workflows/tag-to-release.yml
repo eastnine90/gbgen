@@ -1,0 +1,44 @@
+name: tag-to-release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release for tag (if missing)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "tag=$TAG"
+
+          # Idempotency: do nothing if the release already exists.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release already exists for $TAG; skipping."
+            exit 0
+          fi
+
+          # SemVer prereleases typically contain '-' (e.g. v0.1.0-rc.1).
+          prerelease=false
+          if [[ "$TAG" == *-* ]]; then
+            prerelease=true
+          fi
+
+          args=( "$TAG" --title "$TAG" --generate-notes )
+          if [ "$prerelease" = "true" ]; then
+            args+=( --prerelease )
+          fi
+
+          gh release create "${args[@]}"
+
+
