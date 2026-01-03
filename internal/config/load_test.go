@@ -104,5 +104,3 @@ generator:
 		t.Fatalf("emitFeatureList = %v", got.Generator.EmitFeatureList)
 	}
 }
-
-

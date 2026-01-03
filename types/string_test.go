@@ -104,5 +104,3 @@ func TestStringFeature_Key_And_GetOr_OK(t *testing.T) {
 		t.Fatalf("expected blue, got %q", v)
 	}
 }
-
-

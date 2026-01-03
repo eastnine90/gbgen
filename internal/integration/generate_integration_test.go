@@ -192,5 +192,3 @@ func goTestPackageDir(t *testing.T, repoRoot, pkgDir string) {
 		t.Fatalf("go test %s failed: %v\n%s", rel, err, string(out))
 	}
 }
-
-

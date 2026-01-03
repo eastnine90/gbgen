@@ -173,5 +173,3 @@ func TestJSONFeature_Decode_Generic(t *testing.T) {
 		t.Fatalf("expected default on decode failure, got %#v", cfg2)
 	}
 }
-
-

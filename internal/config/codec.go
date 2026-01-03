@@ -86,5 +86,3 @@ func normalizeFormat(s string) (Format, error) {
 		return "", fmt.Errorf("unsupported format %q (expected json|yaml|toml)", s)
 	}
 }
-
-

@@ -104,5 +104,3 @@ func TestNumberFeature_Key_And_GetOr_OK(t *testing.T) {
 		t.Fatalf("expected 12.5, got %v", v)
 	}
 }
-
-

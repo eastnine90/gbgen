@@ -5,5 +5,3 @@
 // - init
 // - version
 package cmd
-
-
