@@ -1,6 +1,6 @@
 module github.com/eastnine90/gbgen
 
-go 1.25
+go 1.23
 
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
 
