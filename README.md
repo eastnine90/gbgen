@@ -205,6 +205,20 @@ Generate the GrowthBook API client (committed under `internal/growthbookapi`):
 make gen-growthbookapi
 ```
 
+## Release & build metadata
+
+- **Go install**: tagged releases support `go install github.com/eastnine90/gbgen@latest`.
+- **Version stamping**: the binary supports build-time version metadata via `-ldflags`:
+
+```bash
+go build -ldflags "\
+  -X github.com/eastnine90/gbgen/internal/buildinfo.Version=v0.1.0 \
+  -X github.com/eastnine90/gbgen/internal/buildinfo.Commit=$(git rev-parse HEAD)"
+./gbgen version
+```
+
+- **SLSA (prepared)**: this repo includes a `.slsa-goreleaser.yml` build config for the SLSA Go builder workflow (to be wired in later).
+
 Run unit tests:
 
 ```bash

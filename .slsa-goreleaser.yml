@@ -1,0 +1,32 @@
+version: 1
+
+# Environment variables used during compilation.
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=0
+
+# Flags for the compiler.
+flags:
+  - -trimpath
+
+# Target platform for this build config.
+# If you want multi-platform releases, you can add more configs/workflows later.
+goos: linux
+goarch: amd64
+
+# Entrypoint to compile.
+main: ./
+
+# Binary output name.
+binary: gbgen-{{ .Os }}-{{ .Arch }}
+
+# Optional: ldflags can be wired from the workflow via evaluated envs.
+# Example evaluated envs (in the future SLSA workflow):
+#   VERSION, COMMIT, COMMIT_DATE, TREE_STATE
+ldflags:
+  - "-X github.com/eastnine90/gbgen/internal/buildinfo.Version={{ .Env.VERSION }}"
+  - "-X github.com/eastnine90/gbgen/internal/buildinfo.Commit={{ .Env.COMMIT }}"
+  - "-X github.com/eastnine90/gbgen/internal/buildinfo.CommitDate={{ .Env.COMMIT_DATE }}"
+  - "-X github.com/eastnine90/gbgen/internal/buildinfo.TreeState={{ .Env.TREE_STATE }}"
+
+

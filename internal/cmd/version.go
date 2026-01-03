@@ -12,6 +12,11 @@ func newVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print version information",
 		Run: func(cmd *cobra.Command, args []string) {
+			// Keep output stable/simple for scripting, but include commit metadata when available.
+			if buildinfo.Commit != "" {
+				fmt.Printf("gbgen %s (%s)\n", buildinfo.Version, buildinfo.Commit)
+				return
+			}
 			fmt.Printf("gbgen %s\n", buildinfo.Version)
 		},
 	}
