@@ -21,17 +21,14 @@ func (f BooleanFeature) Evaluate(ctx context.Context, client *growthbook.Client,
 		return result, err
 	}
 
-	if r == nil {
-		return result, ErrMissingResult
-	}
-
-	if _, ok := r.Value.(bool); !ok {
+	v, ok := r.Value.(bool)
+	if !ok {
 		return result, newTypeMismatchError(string(f), "bool", r.Value)
 	}
 
 	return FeatureResult[bool]{
 		Raw:   r,
-		Value: r.On,
+		Value: v,
 		Valid: true,
 	}, nil
 }

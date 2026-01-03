@@ -48,6 +48,7 @@ Environment variable prefix: `GBGEN_` (e.g. `GBGEN_API_KEY`).
 ## Using typed features
 
 When `generator.emitTypedFeatures=true`, the generated file contains typed feature variables that can be evaluated using the GrowthBook Go SDK.
+All helpers accept optional per-evaluation attributes (`growthbook.Attributes`) to apply on top of the client's base attributes.
 
 ```go
 package main
@@ -71,7 +72,7 @@ func main() {
 	// Initialize GrowthBook client however you normally do.
 	var client *growthbook.Client
 
-	res, err := features.FeatureCheckoutRedesign.Evaluate(ctx, client)
+	res, err := features.FeatureCheckoutRedesign.Evaluate(ctx, client, growthbook.Attributes{"id": "u1"})
 	if err != nil {
 		if errors.Is(err, types.ErrMissingKey) {
 			// Feature key is not present in the loaded feature definitions.
@@ -104,8 +105,8 @@ func main() {
 If you prefer a "happy path" API (no errors), use `Get`/`GetOr`:
 
 ```go
-enabled := features.FeatureCheckoutRedesign.GetOr(ctx, client, false)
-if v, ok := features.FeatureCheckoutRedesign.Get(ctx, client); ok {
+enabled := features.FeatureCheckoutRedesign.GetOr(ctx, client, false, growthbook.Attributes{"id": "u1"})
+if v, ok := features.FeatureCheckoutRedesign.Get(ctx, client, growthbook.Attributes{"id": "u1"}); ok {
 	_ = v
 }
 ```
@@ -128,6 +129,50 @@ type CheckoutConfig struct {
 
 cfg := types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).GetOr(ctx, client, CheckoutConfig{})
 ```
+
+More `WithType[T]` patterns:
+
+- Decode with explicit error handling:
+
+```go
+type CheckoutConfig struct {
+	Currency string `json:"currency"`
+	MaxItems int    `json:"maxItems"`
+}
+
+res, err := types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).Evaluate(ctx, client)
+if err != nil {
+	if errors.Is(err, types.ErrMissingKey) {
+		// The feature key is not present in the loaded definitions.
+	}
+	if errors.Is(err, types.ErrTypeMismatch) {
+		// JSON shape doesn't match CheckoutConfig (or the feature type drifted).
+	}
+}
+if res.IsValid() {
+	_ = res.Value // CheckoutConfig
+}
+```
+
+- Happy-path decode (no errors):
+
+```go
+cfg, ok := types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).Get(ctx, client)
+_ = ok
+
+cfg = types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).GetOr(ctx, client, CheckoutConfig{})
+```
+
+- Decode JSON arrays / maps:
+
+```go
+items := types.WithType[[]string](types.JSONFeature("allowed-items")).GetOr(ctx, client, nil)
+weights := types.WithType[map[string]float64](types.JSONFeature("weights")).GetOr(ctx, client, nil)
+```
+
+### Number features
+
+GrowthBook numeric feature values are decoded as `float64` by the GrowthBook Go SDK, so `types.NumberFeature` evaluates to `float64`.
 
 ### Type mismatch errors (when can it happen?)
 

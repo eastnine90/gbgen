@@ -7,9 +7,12 @@
 //
 // JSON features:
 //   - JSONFeature is strict and expects a JSON object (map[string]any).
-//   - JSONFeature also provides EvaluateAny/GetAny helpers for any JSON shape (map/slice/string/number/bool/nil).
+//   - JSONFeature also provides EvaluateAny/GetAny/GetAnyOr helpers for any JSON shape (map/slice/string/number/bool/nil).
 //   - TypedFeature (WithType[T]) can decode a feature value into a caller-provided type parameter T.
 //     Missing feature keys return ErrMissingKey. The Get/GetOr helpers treat ErrMissingKey as a normal failure.
+//
+// All Evaluate/Get/GetOr helpers accept optional per-evaluation attributes (growthbook.Attributes) to apply on top of the client's base attributes.
+// Note: numeric values in JSON are decoded as float64 by the GrowthBook Go SDK.
 //
 // Example:
 //
