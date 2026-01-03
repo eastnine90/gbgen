@@ -23,7 +23,8 @@ jobs:
 
       - name: gofmt (check)
         run: |
-          files="$(gofmt -l .)"
+          # Only check formatting on tracked Go files and exclude generated GrowthBook API client code.
+          files="$(gofmt -l $(git ls-files '*.go' ':!internal/growthbookapi/**'))"
           if [ -n "$files" ]; then
             echo "gofmt needed on:"
             echo "$files"
