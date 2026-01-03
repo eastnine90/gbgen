@@ -35,6 +35,9 @@ jobs:
           fi
 
           args=( "$TAG" --title "$TAG" --generate-notes )
+          # Create as a draft so humans can review/edit notes before publishing.
+          # Publishing the release will then trigger the SLSA workflow (release: published).
+          args+=( --draft )
           if [ "$prerelease" = "true" ]; then
             args+=( --prerelease )
           fi
