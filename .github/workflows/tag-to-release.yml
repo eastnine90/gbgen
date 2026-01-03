@@ -12,9 +12,16 @@ jobs:
   create_release:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout (tag)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
       - name: Create GitHub Release for tag (if missing)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         shell: bash
         run: |
