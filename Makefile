@@ -13,4 +13,10 @@ test-integration:
 test-e2e:
 	@bash scripts/test_e2e_local.sh
 
+.PHONY: fmt
+
+# fmt runs gofmt on tracked Go files, excluding the generated GrowthBook API client.
+fmt:
+	@gofmt -w $$(git ls-files '*.go' ':!internal/growthbookapi/**')
+
 
