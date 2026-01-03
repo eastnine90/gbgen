@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"go/format"
 	"net/http"
 	"strings"
 	"testing"
@@ -97,6 +98,7 @@ func TestGeneratorGenerate_KeysOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Generate error: %v", err)
 	}
+	assertGofmtIdempotent(t, src)
 	out := string(src)
 
 	assertContains(t, out, "package features")
@@ -157,6 +159,7 @@ func TestGeneratorGenerate_Typed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Generate error: %v", err)
 	}
+	assertGofmtIdempotent(t, src)
 	out := string(src)
 
 	assertContains(t, out, "import (")
@@ -176,5 +179,17 @@ func assertContains(t *testing.T, s, substr string) {
 	t.Helper()
 	if !strings.Contains(s, substr) {
 		t.Fatalf("expected output to contain %q\n---\n%s\n---", substr, s)
+	}
+}
+
+func assertGofmtIdempotent(t *testing.T, src []byte) {
+	t.Helper()
+
+	formatted, err := format.Source(src)
+	if err != nil {
+		t.Fatalf("generated output is not valid go/format input: %v", err)
+	}
+	if string(formatted) != string(src) {
+		t.Fatalf("generated output is not gofmt-idempotent (format.Source would change it)\n--- before ---\n%s\n--- after ---\n%s\n", string(src), string(formatted))
 	}
 }
