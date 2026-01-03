@@ -1,7 +1,6 @@
 name: go-ossf-slsa3-publish
 
 on:
-  workflow_dispatch:
   release:
     # Run only when a release is published (drafts won't trigger this).
     types: [published]
@@ -11,7 +10,7 @@ permissions: read-all
 jobs:
   args:
     # Extra guard: exclude prereleases even if they are published.
-    if: ${{ github.event_name != 'release' || github.event.release.prerelease == false }}
+    if: ${{ github.event.release.prerelease == false }}
     runs-on: ubuntu-latest
     outputs:
       commit-date: ${{ steps.meta.outputs.commit-date }}
@@ -33,12 +32,7 @@ jobs:
           set -euo pipefail
 
           # Use the release tag as the version (e.g. v0.1.0).
-          if [ "${{ github.event_name }}" = "release" ]; then
-            version="${{ github.event.release.tag_name }}"
-          else
-            # Manual runs default to "dev" unless overridden by the operator.
-            version="dev"
-          fi
+          version="${{ github.event.release.tag_name }}"
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -46,7 +40,7 @@ jobs:
           echo "tree-state=$(if git diff --quiet; then echo clean; else echo dirty; fi)" >> "$GITHUB_OUTPUT"
 
   build:
-    if: ${{ github.event_name != 'release' || github.event.release.prerelease == false }}
+    if: ${{ github.event.release.prerelease == false }}
     permissions:
       id-token: write # To sign provenance.
       contents: write # To upload release assets.
