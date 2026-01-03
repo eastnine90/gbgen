@@ -119,6 +119,56 @@ func TestGeneratorGenerate_KeysOnly(t *testing.T) {
 	}
 }
 
+func TestGeneratorGenerate_KeysOnly_NoFeatureList(t *testing.T) {
+	project := "proj_123"
+	cfg := config.Config{
+		GrowthBook: config.GrowthBookConfig{
+			APIBaseURL: "https://api.growthbook.io",
+			APIKey:     "secret_x",
+			ProjectID:  &project,
+		},
+		Generator: config.GeneratorConfig{
+			OutputDir:         "./ignored",
+			PackageName:       "features",
+			EmitTypedFeatures: false,
+			EmitFeatureList:   false,
+		},
+	}
+
+	mock := &mockFeaturesAPI{
+		t: t,
+		featuresRespByOffset: map[int32]*growthbookapi.ListFeatures200Response{
+			0: {
+				HasMore:    false,
+				NextOffset: 0,
+				Features: []growthbookapi.Feature{
+					{
+						Id:          "checkout-redesign",
+						Description: "Checkout redesign flag",
+						Environments: map[string]growthbookapi.FeatureEnvironment{
+							"production": {Enabled: true},
+						},
+						ValueType: growthbookapi.FEATUREVALUETYPE_BOOLEAN,
+					},
+				},
+			},
+		},
+	}
+
+	g := &Generator{api: mock, config: cfg}
+	src, err := g.Generate(context.Background())
+	if err != nil {
+		t.Fatalf("Generate error: %v", err)
+	}
+	assertGofmtIdempotent(t, src)
+	out := string(src)
+
+	assertContains(t, out, "package features")
+	assertContains(t, out, "type FeatureKey string")
+	assertContains(t, out, "FeatureCheckoutRedesign FeatureKey = \"checkout-redesign\"")
+	assertNotContains(t, out, "FeatureList")
+}
+
 func TestGeneratorGenerate_Typed(t *testing.T) {
 	cfg := config.Config{
 		GrowthBook: config.GrowthBookConfig{
@@ -175,10 +225,67 @@ func TestGeneratorGenerate_Typed(t *testing.T) {
 	}
 }
 
+func TestGeneratorGenerate_Typed_NoFeatureList(t *testing.T) {
+	cfg := config.Config{
+		GrowthBook: config.GrowthBookConfig{
+			APIBaseURL: "https://api.growthbook.io",
+			APIKey:     "secret_x",
+			ProjectID:  nil,
+		},
+		Generator: config.GeneratorConfig{
+			OutputDir:         "./ignored",
+			PackageName:       "features",
+			EmitTypedFeatures: true,
+			EmitFeatureList:   false,
+		},
+	}
+
+	mock := &mockFeaturesAPI{
+		t: t,
+		featuresRespByOffset: map[int32]*growthbookapi.ListFeatures200Response{
+			0: {
+				HasMore:    false,
+				NextOffset: 0,
+				Features: []growthbookapi.Feature{
+					{
+						Id:          "theme-name",
+						Description: "Theme name",
+						Environments: map[string]growthbookapi.FeatureEnvironment{
+							"production": {Enabled: true},
+						},
+						ValueType: growthbookapi.FEATUREVALUETYPE_STRING,
+					},
+				},
+			},
+		},
+	}
+
+	g := &Generator{api: mock, config: cfg}
+	src, err := g.Generate(context.Background())
+	if err != nil {
+		t.Fatalf("Generate error: %v", err)
+	}
+	assertGofmtIdempotent(t, src)
+	out := string(src)
+
+	assertContains(t, out, "import (")
+	assertContains(t, out, "\"github.com/eastnine90/gbgen/types\"")
+	assertContains(t, out, "FeatureThemeName = types.StringFeature(\"theme-name\")")
+	assertNotContains(t, out, "FeatureList")
+	assertNotContains(t, out, "type FeatureKey string")
+}
+
 func assertContains(t *testing.T, s, substr string) {
 	t.Helper()
 	if !strings.Contains(s, substr) {
 		t.Fatalf("expected output to contain %q\n---\n%s\n---", substr, s)
+	}
+}
+
+func assertNotContains(t *testing.T, s, substr string) {
+	t.Helper()
+	if strings.Contains(s, substr) {
+		t.Fatalf("expected output to NOT contain %q\n---\n%s\n---", substr, s)
 	}
 }
 
