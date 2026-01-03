@@ -1,0 +1,21 @@
+# Go build / test artifacts
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Local temp / generated scratch
+tmp/
+.tmp/
+.gen_growthbookapi.*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Optional: local env files
+.env
+.env.*
+
+

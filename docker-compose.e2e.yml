@@ -1,0 +1,36 @@
+name: gbgen-e2e
+
+services:
+  mongo:
+    image: "mongo:6"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: growthbook
+    volumes:
+      - gbgen_e2e_mongodata:/data/db
+      - ./scripts/e2e/mongo-init:/docker-entrypoint-initdb.d:ro
+
+  growthbook:
+    image: "growthbook/growthbook:latest"
+    depends_on:
+      - mongo
+    ports:
+      - "${E2E_GB_PORT_UI:-3000}:3000"
+      - "${E2E_GB_PORT_API:-3100}:3100"
+    environment:
+      MONGODB_URI: "mongodb://root:password@mongo:27017/growthbook?authSource=admin"
+      # Ensure single-org mode so SECRET_API_KEY is honored.
+      IS_MULTI_ORG: "false"
+      # Deterministic API key for local E2E tests.
+      # GrowthBook supports a built-in "secret API key" for single-org mode.
+      SECRET_API_KEY: "${E2E_GB_SECRET_API_KEY:-secret_gbgen_e2e}"
+      SECRET_API_KEY_ROLE: "${E2E_GB_SECRET_API_KEY_ROLE:-admin}"
+    volumes:
+      - gbgen_e2e_uploads:/usr/local/src/app/packages/back-end/uploads
+
+volumes:
+  gbgen_e2e_uploads:
+  gbgen_e2e_mongodata:
+
+

@@ -1,0 +1,42 @@
+// Package types contains the public runtime types used by gbgen's generated code.
+//
+// Generated feature variables are thin wrappers around GrowthBook feature keys that provide:
+// - Typed evaluation helpers (e.g. BooleanFeature, StringFeature, NumberFeature, JSONFeature)
+// - Structured type mismatch errors (TypeMismatchError) instead of panics
+// - Optional "happy-path" helpers (Get / GetOr) that never return errors
+//
+// JSON features:
+//   - JSONFeature is strict and expects a JSON object (map[string]any).
+//   - JSONFeature also provides EvaluateAny/GetAny helpers for any JSON shape (map/slice/string/number/bool/nil).
+//   - TypedFeature (WithType[T]) can decode a feature value into a caller-provided type parameter T.
+//     Missing feature keys return ErrMissingKey. The Get/GetOr helpers treat ErrMissingKey as a normal failure.
+//
+// Example:
+//
+//	res, err := FeatureMyFlag.Evaluate(ctx, client)
+//	if err != nil {
+//	  // errors.Is(err, types.ErrMissingKey) can be used to detect missing keys
+//	  // errors.Is(err, types.ErrTypeMismatch) can be used to detect decode failures
+//	}
+//	if res.IsValid() {
+//	  _ = res.GetValue()
+//	  // Extra metadata (rule id, source, experiment info) is available via res.GetRaw().
+//	}
+//
+// TypeMismatchError can happen if the feature's value type does not match what your code expects.
+// In practice, GrowthBook usually treats a feature's valueType as immutable, so mismatches commonly
+// indicate stale generated code (or a feature being deleted/re-created with a different type),
+// overrides returning an unexpected type, or JSON values that aren't objects.
+//
+// For convenience in code paths that prefer defaults over errors:
+//
+//	v := FeatureMyFlag.GetOr(ctx, client, false)
+//
+// Decoding JSON into a struct:
+//
+//	type Config struct {
+//	  Currency string `json:"currency"`
+//	  MaxItems int    `json:"maxItems"`
+//	}
+//	cfg := WithType[Config](JSONFeature("checkout-config")).GetOr(ctx, client, Config{})
+package types
