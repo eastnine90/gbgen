@@ -46,9 +46,11 @@ func (f *FeatureResult[T]) GetRaw() *growthbook.FeatureResult {
 
 func evaluateWithAttrs(ctx context.Context, client *growthbook.Client, key string, attrs ...growthbook.Attributes) (result *growthbook.FeatureResult, err error) {
 	for _, attr := range attrs {
-		if client, err = client.WithAttributes(attr); err != nil {
+		var next *growthbook.Client
+		if next, err = client.WithAttributes(attr); err != nil {
 			return nil, err
 		}
+		client = next
 	}
 
 	r := client.EvalFeature(ctx, key)
@@ -98,15 +100,9 @@ func (f TypedFeature[T]) Evaluate(ctx context.Context, client *growthbook.Client
 	}
 	result.Raw = r
 
-	valueByte, err := json.Marshal(r.Value)
+	value, err := decodeJSONRoundTrip[T](f.Key(), r.Value)
 	if err != nil {
 		return result, err
-	}
-
-	var value T
-	if err := json.Unmarshal(valueByte, &value); err != nil {
-		expected := reflect.TypeOf((*T)(nil)).Elem().String()
-		return result, newTypeMismatchError(f.Key(), expected, r.Value)
 	}
 
 	return FeatureResult[T]{
@@ -114,6 +110,22 @@ func (f TypedFeature[T]) Evaluate(ctx context.Context, client *growthbook.Client
 		Value: value,
 		Valid: true,
 	}, nil
+}
+
+func decodeJSONRoundTrip[T any](featureKey string, raw any) (value T, err error) {
+	valueByte, err := json.Marshal(raw)
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+
+	if err := json.Unmarshal(valueByte, &value); err != nil {
+		expected := reflect.TypeOf((*T)(nil)).Elem().String()
+		var zero T
+		return zero, newTypeMismatchError(featureKey, expected, raw)
+	}
+
+	return value, nil
 }
 
 // Get evaluates and decodes the feature and returns (value, ok) for happy-path usage.

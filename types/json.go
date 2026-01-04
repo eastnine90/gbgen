@@ -15,6 +15,41 @@ func (f JSONFeature) Key() string {
 	return string(f)
 }
 
+// Object returns the same feature key as a JSONFeature.
+//
+// This is an identity helper for readability when chaining.
+func (f JSONFeature) Object() JSONFeature {
+	return f
+}
+
+// Array returns the same feature key as an ArrayFeature (JSON array decoded as []any).
+//
+// Note: this does not convert or validate values; it only reinterprets the key.
+func (f JSONFeature) Array() ArrayFeature {
+	return ArrayFeature(f)
+}
+
+// String returns the same feature key as a StringFeature.
+//
+// Note: this does not convert or validate values; it only reinterprets the key.
+func (f JSONFeature) String() StringFeature {
+	return StringFeature(f)
+}
+
+// Number returns the same feature key as a NumberFeature (decoded as float64).
+//
+// Note: this does not convert or validate values; it only reinterprets the key.
+func (f JSONFeature) Number() NumberFeature {
+	return NumberFeature(f)
+}
+
+// Boolean returns the same feature key as a BooleanFeature.
+//
+// Note: this does not convert or validate values; it only reinterprets the key.
+func (f JSONFeature) Boolean() BooleanFeature {
+	return BooleanFeature(f)
+}
+
 // Evaluate evaluates the feature using the provided GrowthBook client and optional attributes.
 func (f JSONFeature) Evaluate(ctx context.Context, client *growthbook.Client, attrs ...growthbook.Attributes) (result FeatureResult[map[string]any], err error) {
 	r, err := evaluateWithAttrs(ctx, client, string(f), attrs...)
@@ -23,7 +58,7 @@ func (f JSONFeature) Evaluate(ctx context.Context, client *growthbook.Client, at
 	}
 
 	if _, ok := r.Value.(map[string]any); !ok {
-		return result, newTypeMismatchError(string(f), "json", r.Value)
+		return result, newTypeMismatchError(string(f), "map[string]any", r.Value)
 	}
 
 	return FeatureResult[map[string]any]{

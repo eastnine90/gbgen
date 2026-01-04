@@ -38,11 +38,7 @@ func (e *TypeMismatchError) Unwrap() error {
 func newTypeMismatchError(featureKey, expected string, actual any) *TypeMismatchError {
 	actualType := "nil"
 	if actual != nil {
-		if t := reflect.TypeOf(actual); t != nil {
-			actualType = t.String()
-		} else {
-			actualType = "unknown"
-		}
+		actualType = reflect.TypeOf(actual).String()
 	}
 	return &TypeMismatchError{
 		FeatureKey: featureKey,

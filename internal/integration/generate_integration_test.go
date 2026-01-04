@@ -4,10 +4,15 @@ package integration_test
 
 import (
 	"context"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -60,8 +65,14 @@ func TestGenerateIntegration_KeysOnly_Compiles(t *testing.T) {
 	if strings.Contains(out, "\"github.com/eastnine90/gbgen/types\"") {
 		t.Fatalf("did not expect keys-only output to import types\n---\n%s\n---", out)
 	}
-	if expectFeatureID != "" && !strings.Contains(out, "\""+expectFeatureID+"\"") {
-		t.Fatalf("expected output to contain feature id %q\n---\n%s\n---", expectFeatureID, out)
+	if expectFeatureID != "" {
+		ok, err := generatedCodeContainsFeatureID(src, expectFeatureID)
+		if err != nil {
+			t.Fatalf("feature id check failed: %v\n---\n%s\n---", err, out)
+		}
+		if !ok {
+			t.Fatalf("expected generated code to reference feature id %q\n---\n%s\n---", expectFeatureID, out)
+		}
 	}
 
 	if err := os.WriteFile(outFile, src, 0o644); err != nil {
@@ -112,8 +123,14 @@ func TestGenerateIntegration_Typed_Compiles(t *testing.T) {
 	if !strings.Contains(out, "\"github.com/eastnine90/gbgen/types\"") {
 		t.Fatalf("expected typed output to import types\n---\n%s\n---", out)
 	}
-	if expectFeatureID != "" && !strings.Contains(out, "\""+expectFeatureID+"\"") {
-		t.Fatalf("expected output to contain feature id %q\n---\n%s\n---", expectFeatureID, out)
+	if expectFeatureID != "" {
+		ok, err := generatedCodeContainsFeatureID(src, expectFeatureID)
+		if err != nil {
+			t.Fatalf("feature id check failed: %v\n---\n%s\n---", err, out)
+		}
+		if !ok {
+			t.Fatalf("expected generated code to reference feature id %q\n---\n%s\n---", expectFeatureID, out)
+		}
 	}
 
 	if err := os.WriteFile(outFile, src, 0o644); err != nil {
@@ -190,5 +207,75 @@ func goTestPackageDir(t *testing.T, repoRoot, pkgDir string) {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("go test %s failed: %v\n%s", rel, err, string(out))
+	}
+}
+
+func generatedCodeContainsFeatureID(src []byte, featureID string) (bool, error) {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "features.gen.go", src, 0)
+	if err != nil {
+		return false, fmt.Errorf("parse generated code: %w", err)
+	}
+
+	var found bool
+	ast.Inspect(f, func(n ast.Node) bool {
+		if found || n == nil {
+			return false
+		}
+
+		switch x := n.(type) {
+		case *ast.ValueSpec:
+			// Keys-only generation emits:
+			//   const FeatureX FeatureKey = "some-id"
+			if ident, ok := x.Type.(*ast.Ident); ok && ident.Name == "FeatureKey" {
+				for _, v := range x.Values {
+					if lit, ok := v.(*ast.BasicLit); ok && lit.Kind == token.STRING {
+						if s, err := strconv.Unquote(lit.Value); err == nil && s == featureID {
+							found = true
+							return false
+						}
+					}
+				}
+			}
+
+		case *ast.CallExpr:
+			// Typed generation emits:
+			//   FeatureX = types.BooleanFeature("some-id")
+			//
+			// Typed generation with emitList emits:
+			//   FeatureKey("some-id")
+			if len(x.Args) != 1 {
+				break
+			}
+			lit, ok := x.Args[0].(*ast.BasicLit)
+			if !ok || lit.Kind != token.STRING {
+				break
+			}
+			s, err := strconv.Unquote(lit.Value)
+			if err != nil || s != featureID {
+				break
+			}
+
+			name := callName(x.Fun)
+			if name == "FeatureKey" || strings.HasSuffix(name, "Feature") {
+				found = true
+				return false
+			}
+		}
+
+		return true
+	})
+
+	return found, nil
+}
+
+func callName(fun ast.Expr) string {
+	switch f := fun.(type) {
+	case *ast.Ident:
+		return f.Name
+	case *ast.SelectorExpr:
+		return f.Sel.Name
+	default:
+		return ""
 	}
 }

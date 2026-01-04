@@ -60,8 +60,8 @@ func TestJSONFeature_Evaluate_TypeMismatch(t *testing.T) {
 	if tm.FeatureKey != "checkout-config" {
 		t.Fatalf("expected FeatureKey=checkout-config, got %q", tm.FeatureKey)
 	}
-	if tm.Expected != "json" {
-		t.Fatalf("expected Expected=json, got %q", tm.Expected)
+	if tm.Expected != "map[string]any" {
+		t.Fatalf("expected Expected=map[string]any, got %q", tm.Expected)
 	}
 }
 
@@ -171,5 +171,91 @@ func TestJSONFeature_Decode_Generic(t *testing.T) {
 	cfg2 := WithType[Config](JSONFeature("checkout-config-array")).GetOr(ctx, client, def)
 	if cfg2 != def {
 		t.Fatalf("expected default on decode failure, got %#v", cfg2)
+	}
+}
+
+func TestJSONFeature_WrapperMethods_Evaluate(t *testing.T) {
+	ctx := context.Background()
+
+	client, err := growthbook.NewClient(ctx, growthbook.WithJsonFeatures(`{
+		"val-obj": {"defaultValue": {"k":"v"}},
+		"val-arr": {"defaultValue": [1,2,3]},
+		"val-str": {"defaultValue": "hello"},
+		"val-num": {"defaultValue": 12.5},
+		"val-bool": {"defaultValue": true}
+	}`))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	t.Cleanup(func() { _ = client.Close() })
+
+	// Object is an identity helper for readability.
+	if got := JSONFeature("val-obj").Object().Key(); got != "val-obj" {
+		t.Fatalf("expected Object().Key()=val-obj, got %q", got)
+	}
+
+	obj, err := JSONFeature("val-obj").Object().Evaluate(ctx, client)
+	if err != nil || !obj.Valid || obj.Value["k"] != "v" {
+		t.Fatalf("expected object evaluate ok, got (err=%v, valid=%v, value=%#v)", err, obj.Valid, obj.Value)
+	}
+
+	arr, err := JSONFeature("val-arr").Array().Evaluate(ctx, client)
+	if err != nil || !arr.Valid || len(arr.Value) != 3 {
+		t.Fatalf("expected array evaluate ok, got (err=%v, valid=%v, value=%#v)", err, arr.Valid, arr.Value)
+	}
+
+	str, err := JSONFeature("val-str").String().Evaluate(ctx, client)
+	if err != nil || !str.Valid || str.Value != "hello" {
+		t.Fatalf("expected string evaluate ok, got (err=%v, valid=%v, value=%#v)", err, str.Valid, str.Value)
+	}
+
+	num, err := JSONFeature("val-num").Number().Evaluate(ctx, client)
+	if err != nil || !num.Valid || num.Value != 12.5 {
+		t.Fatalf("expected number evaluate ok, got (err=%v, valid=%v, value=%#v)", err, num.Valid, num.Value)
+	}
+
+	b, err := JSONFeature("val-bool").Boolean().Evaluate(ctx, client)
+	if err != nil || !b.Valid || b.Value != true {
+		t.Fatalf("expected boolean evaluate ok, got (err=%v, valid=%v, value=%#v)", err, b.Valid, b.Value)
+	}
+}
+
+func TestJSONFeature_GetOr_NonDefaultBranch(t *testing.T) {
+	ctx := context.Background()
+
+	client, err := growthbook.NewClient(ctx, growthbook.WithJsonFeatures(`{
+		"checkout-config": {"defaultValue": {"currency":"USD"}}
+	}`))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	t.Cleanup(func() { _ = client.Close() })
+
+	def := map[string]any{"currency": "DEF"}
+	got := JSONFeature("checkout-config").GetOr(ctx, client, def)
+	if got["currency"] != "USD" {
+		t.Fatalf("expected non-default result (USD), got %#v", got)
+	}
+}
+
+func TestJSONFeature_GetAny_And_GetAnyOr_Branches(t *testing.T) {
+	ctx := context.Background()
+
+	client, err := growthbook.NewClient(ctx, growthbook.WithJsonFeatures(`{
+		"json-str": {"defaultValue": "hello"}
+	}`))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	t.Cleanup(func() { _ = client.Close() })
+
+	// Missing key -> (nil, false)
+	if v, ok := JSONFeature("missing").GetAny(ctx, client); ok || v != nil {
+		t.Fatalf("expected (nil, false) for missing key, got (%#v, %v)", v, ok)
+	}
+
+	// Present key -> returns underlying value (non-default branch for GetAnyOr).
+	if v := JSONFeature("json-str").GetAnyOr(ctx, client, "fallback"); v != "hello" {
+		t.Fatalf("expected hello, got %#v", v)
 	}
 }
