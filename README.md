@@ -149,7 +149,7 @@ type CheckoutConfig struct {
 }
 
 // Recommended: pass the generated typed feature variable directly.
-// (This requires generator.emitTypedFeatures=true and the feature being JSON-typed.)
+// (This requires generator.emitTypedFeatures=true)
 cfg := types.WithType[CheckoutConfig](features.FeatureCheckoutConfig).GetOr(ctx, client, CheckoutConfig{})
 ```
 
