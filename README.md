@@ -45,6 +45,20 @@ Supported config formats: **JSON**, **YAML**, **TOML**.
 
 Environment variable prefix: `GBGEN_` (e.g. `GBGEN_API_KEY`).
 
+## Prerequisite: GrowthBook API Secret Key (read-only)
+
+To let `gbgen` read feature definitions from GrowthBook, you need an API key.
+
+Recommended: create an **organization Secret Key** with the **`readonly`** role (least privilege).
+
+- **Where to create**: GrowthBook UI → `Settings` → `API Keys` → create a new **Secret Key**
+- **Permissions**: choose **read-only** (`readonly`)
+- **How it’s used**: the key is sent to the GrowthBook REST API via either:
+  - **Bearer auth**: `Authorization: Bearer <secret_key>`
+  - **HTTP Basic auth**: username=`<secret_key>`, empty password
+
+For the official authentication options and examples, see [GrowthBook API Authentication docs](https://docs.growthbook.io/api/#section/Authentication).
+
 ## Typed vs keys-only generation
 
 - **Keys-only (default)**: emits `type FeatureKey string` and constants like `FeatureCheckoutRedesign`.
