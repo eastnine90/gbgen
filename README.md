@@ -148,7 +148,9 @@ type CheckoutConfig struct {
 	MaxItems int    `json:"maxItems"`
 }
 
-cfg := types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).GetOr(ctx, client, CheckoutConfig{})
+// Recommended: pass the generated typed feature variable directly.
+// (This requires generator.emitTypedFeatures=true and the feature being JSON-typed.)
+cfg := types.WithType[CheckoutConfig](features.FeatureCheckoutConfig).GetOr(ctx, client, CheckoutConfig{})
 ```
 
 More `WithType[T]` patterns:
@@ -161,7 +163,7 @@ type CheckoutConfig struct {
 	MaxItems int    `json:"maxItems"`
 }
 
-res, err := types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).Evaluate(ctx, client)
+res, err := types.WithType[CheckoutConfig](features.FeatureCheckoutConfig).Evaluate(ctx, client)
 if err != nil {
 	if errors.Is(err, types.ErrMissingKey) {
 		// The feature key is not present in the loaded definitions.
@@ -178,24 +180,30 @@ if res.IsValid() {
 - Happy-path decode (no errors):
 
 ```go
-cfg, ok := types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).Get(ctx, client)
+cfg, ok := types.WithType[CheckoutConfig](features.FeatureCheckoutConfig).Get(ctx, client)
 _ = ok
 
-cfg = types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).GetOr(ctx, client, CheckoutConfig{})
+cfg = types.WithType[CheckoutConfig](features.FeatureCheckoutConfig).GetOr(ctx, client, CheckoutConfig{})
 ```
 
 - Decode JSON arrays / maps:
 
 ```go
-items := types.WithType[[]string](types.JSONFeature("allowed-items")).GetOr(ctx, client, nil)
-weights := types.WithType[map[string]float64](types.JSONFeature("weights")).GetOr(ctx, client, nil)
+items := types.WithType[[]string](features.FeatureAllowedItems).GetOr(ctx, client, nil)
+weights := types.WithType[map[string]float64](features.FeatureWeights).GetOr(ctx, client, nil)
 ```
 
 If you just want the SDK-decoded JSON array shape (`[]any`), you can also use:
 
 ```go
-itemsAny := types.JSONFeature("allowed-items").Array().GetOr(ctx, client, nil)
+itemsAny := features.FeatureAllowedItems.Array().GetOr(ctx, client, nil)
 _ = itemsAny
+```
+
+If you don't have generated typed feature variables available, you can still use `WithType[T]` with a manual key:
+
+```go
+cfg := types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).GetOr(ctx, client, CheckoutConfig{})
 ```
 
 ### Number features
