@@ -89,3 +89,24 @@ func TestBooleanFeature_Get_Sugar(t *testing.T) {
 		t.Fatalf("expected default=true, got %v", v)
 	}
 }
+
+func TestBooleanFeature_Key_And_GetOr_OK(t *testing.T) {
+	ctx := context.Background()
+
+	if got := BooleanFeature("dark-mode").Key(); got != "dark-mode" {
+		t.Fatalf("expected Key=dark-mode, got %q", got)
+	}
+
+	client, err := growthbook.NewClient(ctx, growthbook.WithJsonFeatures(`{
+		"dark-mode": {"defaultValue": true}
+	}`))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	t.Cleanup(func() { _ = client.Close() })
+
+	// Exercise the non-default branch of GetOr.
+	if v := BooleanFeature("dark-mode").GetOr(ctx, client, false); v != true {
+		t.Fatalf("expected true, got %v", v)
+	}
+}

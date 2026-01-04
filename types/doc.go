@@ -1,13 +1,15 @@
 // Package types contains the public runtime types used by gbgen's generated code.
 //
 // Generated feature variables are thin wrappers around GrowthBook feature keys that provide:
-// - Typed evaluation helpers (e.g. BooleanFeature, StringFeature, NumberFeature, JSONFeature)
+// - Typed evaluation helpers (e.g. BooleanFeature, StringFeature, NumberFeature, JSONFeature, ArrayFeature)
 // - Structured type mismatch errors (TypeMismatchError) instead of panics
 // - Optional "happy-path" helpers (Get / GetOr) that never return errors
 //
 // JSON features:
 //   - JSONFeature is strict and expects a JSON object (map[string]any).
 //   - JSONFeature also provides EvaluateAny/GetAny/GetAnyOr helpers for any JSON shape (map/slice/string/number/bool/nil).
+//   - JSONFeature provides convenience "cast" helpers (Object/Array/String/Number/Boolean) that reinterpret the same feature key
+//     as other typed wrappers. These helpers do not convert values; mismatches are surfaced at evaluation time.
 //   - TypedFeature (WithType[T]) can decode a feature value into a caller-provided type parameter T.
 //     Missing feature keys return ErrMissingKey. The Get/GetOr helpers treat ErrMissingKey as a normal failure.
 //

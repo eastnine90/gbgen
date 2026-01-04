@@ -124,6 +124,7 @@ GrowthBook's `JSON` value type can represent **any JSON shape**.
 In gbgen:
 - `types.JSONFeature` is **strict** and expects a JSON object (`map[string]any`). If the value is a string/array/number/etc, it returns `types.ErrTypeMismatch`.
 - `types.JSONFeature` also provides `EvaluateAny` / `GetAny` / `GetAnyOr` to accept any JSON value (`any`).
+- `types.JSONFeature` provides convenience helpers `Object()` / `Array()` / `String()` / `Number()` / `Boolean()` that reinterpret the same feature key as other typed wrappers (no conversion; mismatches fail at evaluation time).
 
 If you want to decode a JSON feature into a struct/slice/map of your choice, use `types.WithType[T]`:
 
@@ -174,6 +175,13 @@ cfg = types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).GetOr
 ```go
 items := types.WithType[[]string](types.JSONFeature("allowed-items")).GetOr(ctx, client, nil)
 weights := types.WithType[map[string]float64](types.JSONFeature("weights")).GetOr(ctx, client, nil)
+```
+
+If you just want the SDK-decoded JSON array shape (`[]any`), you can also use:
+
+```go
+itemsAny := types.JSONFeature("allowed-items").Array().GetOr(ctx, client, nil)
+_ = itemsAny
 ```
 
 ### Number features
