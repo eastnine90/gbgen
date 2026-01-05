@@ -29,8 +29,8 @@ func newGenerateCmd() *cobra.Command {
 			}
 
 			ctx := cmd.Context()
-			g := generator.NewGenerator(cfg)
-			if err := g.Validate(ctx); err != nil {
+			g, err := generator.NewGenerator(cfg)
+			if err != nil {
 				return err
 			}
 

@@ -81,13 +81,13 @@ func renderTypedFeaturesGo(pkg string, features []featureMeta, emitList bool) ([
 
 func typedFeatureTypeExpr(vt growthbookapi.FeatureValueType) (string, error) {
 	switch vt {
-	case growthbookapi.FEATUREVALUETYPE_BOOLEAN:
+	case growthbookapi.Boolean:
 		return "types.BooleanFeature", nil
-	case growthbookapi.FEATUREVALUETYPE_STRING:
+	case growthbookapi.String:
 		return "types.StringFeature", nil
-	case growthbookapi.FEATUREVALUETYPE_NUMBER:
+	case growthbookapi.Number:
 		return "types.NumberFeature", nil
-	case growthbookapi.FEATUREVALUETYPE_JSON:
+	case growthbookapi.Json:
 		return "types.JSONFeature", nil
 	default:
 		return "", fmt.Errorf("unsupported valueType %q", string(vt))

@@ -3,7 +3,6 @@ package generator
 import (
 	"context"
 	"go/format"
-	"net/http"
 	"strings"
 	"testing"
 
@@ -11,42 +10,39 @@ import (
 	"github.com/eastnine90/gbgen/internal/growthbookapi"
 )
 
+var _ growthbookapi.ClientWithResponsesInterface = (*mockFeaturesAPI)(nil)
+
 type mockFeaturesAPI struct {
 	t *testing.T
 
 	listCalls []listCall
 	keysCalls []keysCall
 
-	featuresRespByOffset map[int32]*growthbookapi.ListFeatures200Response
+	featuresRespByOffset map[int32]*growthbookapi.ListFeaturesResponse
+}
+
+func (m *mockFeaturesAPI) ListFeaturesWithResponse(ctx context.Context, params *growthbookapi.ListFeaturesParams, reqEditors ...growthbookapi.RequestEditorFn) (*growthbookapi.ListFeaturesResponse, error) {
+	m.listCalls = append(m.listCalls, listCall{limit: params.Limit, offset: params.Offset, projectID: params.ProjectId})
+
+	var offset int32
+	if params.Offset != nil {
+		offset = int32(*params.Offset)
+	}
+	resp := m.featuresRespByOffset[offset]
+	if resp == nil {
+		m.t.Fatalf("unexpected offset %d", offset)
+	}
+	return resp, nil
 }
 
 type listCall struct {
-	limit     int32
-	offset    int32
+	limit     *int
+	offset    *int
 	projectID *string
 }
 
 type keysCall struct {
 	projectID *string
-}
-
-func (m *mockFeaturesAPI) ListFeatures(ctx context.Context, limit int32, offset int32, projectID *string) (*growthbookapi.ListFeatures200Response, *http.Response, error) {
-	m.listCalls = append(m.listCalls, listCall{limit: limit, offset: offset, projectID: projectID})
-	resp := m.featuresRespByOffset[offset]
-	if resp == nil {
-		m.t.Fatalf("unexpected offset %d", offset)
-	}
-	return resp, nil, nil
-}
-
-func (m *mockFeaturesAPI) GetFeatureKeys(ctx context.Context, projectID *string) ([]string, *http.Response, error) {
-	m.keysCalls = append(m.keysCalls, keysCall{projectID: projectID})
-	return []string{"a", "b"}, nil, nil
-}
-
-func (m *mockFeaturesAPI) GetFeature(ctx context.Context, id string) (*growthbookapi.GetFeature200Response, *http.Response, error) {
-	m.t.Fatalf("GetFeature should not be called in these tests")
-	return nil, nil, nil
 }
 
 func TestGeneratorGenerate_KeysOnly(t *testing.T) {
@@ -67,26 +63,35 @@ func TestGeneratorGenerate_KeysOnly(t *testing.T) {
 
 	mock := &mockFeaturesAPI{
 		t: t,
-		featuresRespByOffset: map[int32]*growthbookapi.ListFeatures200Response{
+		featuresRespByOffset: map[int32]*growthbookapi.ListFeaturesResponse{
 			0: {
-				HasMore:    false,
-				NextOffset: 0,
-				Features: []growthbookapi.Feature{
-					{
-						Id:          "checkout-redesign",
-						Description: "Checkout redesign flag",
-						Environments: map[string]growthbookapi.FeatureEnvironment{
-							"production": {Enabled: true},
+				JSON200: &struct {
+					Count      int                     `json:"count"`
+					Features   []growthbookapi.Feature `json:"features"`
+					HasMore    bool                    `json:"hasMore"`
+					Limit      int                     `json:"limit"`
+					NextOffset *int                    `json:"nextOffset"`
+					Offset     int                     `json:"offset"`
+					Total      int                     `json:"total"`
+				}{
+					HasMore: false,
+					Features: []growthbookapi.Feature{
+						{
+							Id:          "checkout-redesign",
+							Description: "Checkout redesign flag",
+							Environments: map[string]growthbookapi.FeatureEnvironment{
+								"production": {Enabled: true},
+							},
+							ValueType: growthbookapi.Boolean,
 						},
-						ValueType: growthbookapi.FEATUREVALUETYPE_BOOLEAN,
-					},
-					{
-						Id:          "disabled-feature",
-						Description: "Disabled everywhere",
-						Environments: map[string]growthbookapi.FeatureEnvironment{
-							"production": {Enabled: false},
+						{
+							Id:          "disabled-feature",
+							Description: "Disabled everywhere",
+							Environments: map[string]growthbookapi.FeatureEnvironment{
+								"production": {Enabled: false},
+							},
+							ValueType: growthbookapi.Boolean,
 						},
-						ValueType: growthbookapi.FEATUREVALUETYPE_BOOLEAN,
 					},
 				},
 			},
@@ -111,7 +116,7 @@ func TestGeneratorGenerate_KeysOnly(t *testing.T) {
 	if len(mock.listCalls) != 1 {
 		t.Fatalf("expected 1 list call, got %d", len(mock.listCalls))
 	}
-	if mock.listCalls[0].limit != 100 || mock.listCalls[0].offset != 0 {
+	if *mock.listCalls[0].limit != 100 || *mock.listCalls[0].offset != 0 {
 		t.Fatalf("unexpected list call %+v", mock.listCalls[0])
 	}
 	if mock.listCalls[0].projectID == nil || *mock.listCalls[0].projectID != project {
@@ -137,18 +142,27 @@ func TestGeneratorGenerate_KeysOnly_NoFeatureList(t *testing.T) {
 
 	mock := &mockFeaturesAPI{
 		t: t,
-		featuresRespByOffset: map[int32]*growthbookapi.ListFeatures200Response{
+		featuresRespByOffset: map[int32]*growthbookapi.ListFeaturesResponse{
 			0: {
-				HasMore:    false,
-				NextOffset: 0,
-				Features: []growthbookapi.Feature{
-					{
-						Id:          "checkout-redesign",
-						Description: "Checkout redesign flag",
-						Environments: map[string]growthbookapi.FeatureEnvironment{
-							"production": {Enabled: true},
+				JSON200: &struct {
+					Count      int                     `json:"count"`
+					Features   []growthbookapi.Feature `json:"features"`
+					HasMore    bool                    `json:"hasMore"`
+					Limit      int                     `json:"limit"`
+					NextOffset *int                    `json:"nextOffset"`
+					Offset     int                     `json:"offset"`
+					Total      int                     `json:"total"`
+				}{
+					HasMore: false,
+					Features: []growthbookapi.Feature{
+						{
+							Id:          "checkout-redesign",
+							Description: "Checkout redesign flag",
+							Environments: map[string]growthbookapi.FeatureEnvironment{
+								"production": {Enabled: true},
+							},
+							ValueType: growthbookapi.Boolean,
 						},
-						ValueType: growthbookapi.FEATUREVALUETYPE_BOOLEAN,
 					},
 				},
 			},
@@ -186,18 +200,27 @@ func TestGeneratorGenerate_Typed(t *testing.T) {
 
 	mock := &mockFeaturesAPI{
 		t: t,
-		featuresRespByOffset: map[int32]*growthbookapi.ListFeatures200Response{
+		featuresRespByOffset: map[int32]*growthbookapi.ListFeaturesResponse{
 			0: {
-				HasMore:    false,
-				NextOffset: 0,
-				Features: []growthbookapi.Feature{
-					{
-						Id:          "theme-name",
-						Description: "Theme name",
-						Environments: map[string]growthbookapi.FeatureEnvironment{
-							"production": {Enabled: true},
+				JSON200: &struct {
+					Count      int                     `json:"count"`
+					Features   []growthbookapi.Feature `json:"features"`
+					HasMore    bool                    `json:"hasMore"`
+					Limit      int                     `json:"limit"`
+					NextOffset *int                    `json:"nextOffset"`
+					Offset     int                     `json:"offset"`
+					Total      int                     `json:"total"`
+				}{
+					HasMore: false,
+					Features: []growthbookapi.Feature{
+						{
+							Id:          "theme-name",
+							Description: "Theme name",
+							Environments: map[string]growthbookapi.FeatureEnvironment{
+								"production": {Enabled: true},
+							},
+							ValueType: growthbookapi.String,
 						},
-						ValueType: growthbookapi.FEATUREVALUETYPE_STRING,
 					},
 				},
 			},
@@ -242,18 +265,27 @@ func TestGeneratorGenerate_Typed_NoFeatureList(t *testing.T) {
 
 	mock := &mockFeaturesAPI{
 		t: t,
-		featuresRespByOffset: map[int32]*growthbookapi.ListFeatures200Response{
+		featuresRespByOffset: map[int32]*growthbookapi.ListFeaturesResponse{
 			0: {
-				HasMore:    false,
-				NextOffset: 0,
-				Features: []growthbookapi.Feature{
-					{
-						Id:          "theme-name",
-						Description: "Theme name",
-						Environments: map[string]growthbookapi.FeatureEnvironment{
-							"production": {Enabled: true},
+				JSON200: &struct {
+					Count      int                     `json:"count"`
+					Features   []growthbookapi.Feature `json:"features"`
+					HasMore    bool                    `json:"hasMore"`
+					Limit      int                     `json:"limit"`
+					NextOffset *int                    `json:"nextOffset"`
+					Offset     int                     `json:"offset"`
+					Total      int                     `json:"total"`
+				}{
+					HasMore: false,
+					Features: []growthbookapi.Feature{
+						{
+							Id:          "theme-name",
+							Description: "Theme name",
+							Environments: map[string]growthbookapi.FeatureEnvironment{
+								"production": {Enabled: true},
+							},
+							ValueType: growthbookapi.String,
 						},
-						ValueType: growthbookapi.FEATUREVALUETYPE_STRING,
 					},
 				},
 			},
