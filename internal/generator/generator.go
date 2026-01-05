@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	"github.com/eastnine90/gbgen/internal/config"
@@ -9,41 +10,32 @@ import (
 )
 
 type Generator struct {
-	api    FeaturesAPI
+	api    growthbookapi.ClientWithResponsesInterface
 	config config.Config
 }
 
-func NewGenerator(cfg config.Config) *Generator {
-	clientConfig := growthbookapi.NewConfiguration()
-	// Apply server URL from config.
-	// Users provide apiBaseURL like "https://api.growthbook.io" (we append /api/v1),
-	// but if they already include "/api/v1" we keep it as-is.
+func NewGenerator(cfg config.Config) (*Generator, error) {
 	base := strings.TrimRight(cfg.GrowthBook.APIBaseURL, "/")
 	if !strings.HasSuffix(base, "/api/v1") {
 		base = base + "/api/v1"
 	}
-	clientConfig.Servers = growthbookapi.ServerConfigurations{
-		{URL: base},
+
+	api, err := growthbookapi.NewClientWithResponses(base, growthbookapi.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+		req.Header.Set("Authorization", "Bearer "+cfg.GrowthBook.APIKey)
+		return nil
+	}))
+
+	if err != nil {
+		return nil, err
 	}
-	client := growthbookapi.NewAPIClient(clientConfig)
 
 	return &Generator{
-		api:    featuresAPIAdapter{svc: client.FeaturesAPI},
+		api:    api,
 		config: cfg,
-	}
-}
-
-func (g *Generator) Validate(ctx context.Context) error {
-	ctx = context.WithValue(ctx, growthbookapi.ContextAccessToken, g.config.GrowthBook.APIKey)
-
-	// One cheap request to verify base URL + auth + (optional) project filter.
-	_, _, err := g.api.GetFeatureKeys(ctx, g.config.GrowthBook.ProjectID)
-	return err
+	}, nil
 }
 
 func (g *Generator) Generate(ctx context.Context) ([]byte, error) {
-	ctx = context.WithValue(ctx, growthbookapi.ContextAccessToken, g.config.GrowthBook.APIKey)
-
 	features, err := g.fetchAllFeatureMeta(ctx)
 	if err != nil {
 		return nil, err

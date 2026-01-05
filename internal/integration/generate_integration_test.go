@@ -48,9 +48,9 @@ func TestGenerateIntegration_KeysOnly_Compiles(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	gen := generator.NewGenerator(cfg)
-	if err := gen.Validate(ctx); err != nil {
-		t.Fatalf("Validate error: %v", err)
+	gen, err := generator.NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("Init error: %v", err)
 	}
 
 	src, err := gen.Generate(ctx)
@@ -109,9 +109,9 @@ func TestGenerateIntegration_Typed_Compiles(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	gen := generator.NewGenerator(cfg)
-	if err := gen.Validate(ctx); err != nil {
-		t.Fatalf("Validate error: %v", err)
+	gen, err := generator.NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("Init error: %v", err)
 	}
 
 	src, err := gen.Generate(ctx)

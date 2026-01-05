@@ -24,12 +24,17 @@ type namedFeature struct {
 }
 
 func (g *Generator) fetchAllFeatureMeta(ctx context.Context) ([]featureMeta, error) {
-	const limit int32 = 100
-	var offset int32 = 0
+	limit := 100
+	offset := 0
 
 	var out []featureMeta
 	for {
-		resp, _, err := g.api.ListFeatures(ctx, limit, offset, g.config.GrowthBook.ProjectID)
+		resp, err := g.api.ListFeaturesWithResponse(ctx, &growthbookapi.ListFeaturesParams{
+			Limit:     &limit,
+			Offset:    &offset,
+			ProjectId: g.config.GrowthBook.ProjectID,
+			ClientKey: nil,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -37,7 +42,7 @@ func (g *Generator) fetchAllFeatureMeta(ctx context.Context) ([]featureMeta, err
 			return nil, fmt.Errorf("list features: empty response")
 		}
 
-		for _, f := range resp.Features {
+		for _, f := range resp.JSON200.Features {
 			if f.Id == "" {
 				continue
 			}
@@ -49,10 +54,12 @@ func (g *Generator) fetchAllFeatureMeta(ctx context.Context) ([]featureMeta, err
 			})
 		}
 
-		if !resp.HasMore {
+		if !resp.JSON200.HasMore {
 			break
 		}
-		offset = resp.NextOffset
+		if resp.JSON200.NextOffset != nil {
+			offset = *resp.JSON200.NextOffset
+		}
 	}
 
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })

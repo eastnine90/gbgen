@@ -2,7 +2,6 @@ package generator
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/eastnine90/gbgen/internal/growthbookapi"
 )
@@ -19,11 +18,5 @@ type APIClient interface {
 // Implemented by a thin adapter around `*growthbookapi.FeaturesAPIService` in production, and mocks in tests.
 type FeaturesAPI interface {
 	// ListFeatures corresponds to GET /features.
-	ListFeatures(ctx context.Context, limit int32, offset int32, projectID *string) (*growthbookapi.ListFeatures200Response, *http.Response, error)
-
-	// GetFeatureKeys corresponds to GET /feature-keys.
-	GetFeatureKeys(ctx context.Context, projectID *string) ([]string, *http.Response, error)
-
-	// GetFeature corresponds to GET /features/{id}.
-	GetFeature(ctx context.Context, id string) (*growthbookapi.GetFeature200Response, *http.Response, error)
+	ListFeatures(ctx context.Context, limit int32, offset int32, projectID *string) (*growthbookapi.ListFeaturesResponse, error)
 }
