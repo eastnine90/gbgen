@@ -38,7 +38,7 @@ func renderFeatureKeysGo(pkg string, features []featureMeta, emitList bool) ([]b
 	b.Write(preamble)
 
 	fmt.Fprintf(&b, "type FeatureKey string\n\n")
-
+	fmt.Fprintf(&b, "func (f FeatureKey) Key() string { return string(f) }\n")
 	fmt.Fprintf(&b, "const (\n")
 	for _, l := range lines {
 		desc := strings.TrimSpace(l.Description)
