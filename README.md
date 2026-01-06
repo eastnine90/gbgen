@@ -140,7 +140,7 @@ In gbgen:
 - `types.JSONFeature` also provides `EvaluateAny` / `GetAny` / `GetAnyOr` to accept any JSON value (`any`).
 - `types.JSONFeature` provides convenience helpers `Object()` / `Array()` / `String()` / `Number()` / `Boolean()` that reinterpret the same feature key as other typed wrappers (no conversion; mismatches fail at evaluation time).
 
-If you want to decode a JSON feature into a struct/slice/map of your choice, use `types.WithType[T]`:
+If you want to decode a JSON feature into a struct/slice/map of your choice, use `types.AsType[T]`:
 
 ```go
 type CheckoutConfig struct {
@@ -150,10 +150,10 @@ type CheckoutConfig struct {
 
 // Recommended: pass the generated typed feature variable directly.
 // (This requires generator.emitTypedFeatures=true)
-cfg := types.WithType[CheckoutConfig](features.FeatureCheckoutConfig).GetOr(ctx, client, CheckoutConfig{})
+cfg := types.AsType[CheckoutConfig](features.FeatureCheckoutConfig).GetOr(ctx, client, CheckoutConfig{})
 ```
 
-More `WithType[T]` patterns:
+More `AsType[T]` patterns:
 
 - Decode with explicit error handling:
 
@@ -163,7 +163,7 @@ type CheckoutConfig struct {
 	MaxItems int    `json:"maxItems"`
 }
 
-res, err := types.WithType[CheckoutConfig](features.FeatureCheckoutConfig).Evaluate(ctx, client)
+res, err := types.AsType[CheckoutConfig](features.FeatureCheckoutConfig).Evaluate(ctx, client)
 if err != nil {
 	if errors.Is(err, types.ErrMissingKey) {
 		// The feature key is not present in the loaded definitions.
@@ -180,17 +180,17 @@ if res.IsValid() {
 - Happy-path decode (no errors):
 
 ```go
-cfg, ok := types.WithType[CheckoutConfig](features.FeatureCheckoutConfig).Get(ctx, client)
+cfg, ok := types.AsType[CheckoutConfig](features.FeatureCheckoutConfig).Get(ctx, client)
 _ = ok
 
-cfg = types.WithType[CheckoutConfig](features.FeatureCheckoutConfig).GetOr(ctx, client, CheckoutConfig{})
+cfg = types.AsType[CheckoutConfig](features.FeatureCheckoutConfig).GetOr(ctx, client, CheckoutConfig{})
 ```
 
 - Decode JSON arrays / maps:
 
 ```go
-items := types.WithType[[]string](features.FeatureAllowedItems).GetOr(ctx, client, nil)
-weights := types.WithType[map[string]float64](features.FeatureWeights).GetOr(ctx, client, nil)
+items := types.AsType[[]string](features.FeatureAllowedItems).GetOr(ctx, client, nil)
+weights := types.AsType[map[string]float64](features.FeatureWeights).GetOr(ctx, client, nil)
 ```
 
 If you just want the SDK-decoded JSON array shape (`[]any`), you can also use:
@@ -200,10 +200,10 @@ itemsAny := features.FeatureAllowedItems.Array().GetOr(ctx, client, nil)
 _ = itemsAny
 ```
 
-If you don't have generated typed feature variables available, you can still use `WithType[T]` with a manual key:
+If you don't have generated typed feature variables available, you can still use `AsType[T]` with a manual key:
 
 ```go
-cfg := types.WithType[CheckoutConfig](types.JSONFeature("checkout-config")).GetOr(ctx, client, CheckoutConfig{})
+cfg := types.AsType[CheckoutConfig](types.JSONFeature("checkout-config")).GetOr(ctx, client, CheckoutConfig{})
 ```
 
 ### Number features

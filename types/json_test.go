@@ -158,7 +158,7 @@ func TestJSONFeature_Decode_Generic(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = client.Close() })
 
-	cfg, ok := WithType[Config](JSONFeature("checkout-config")).Get(ctx, client)
+	cfg, ok := AsType[Config](JSONFeature("checkout-config")).Get(ctx, client)
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -168,7 +168,7 @@ func TestJSONFeature_Decode_Generic(t *testing.T) {
 
 	// Decoding array into struct should fail.
 	def := Config{Currency: "DEF", MaxItems: 9}
-	cfg2 := WithType[Config](JSONFeature("checkout-config-array")).GetOr(ctx, client, def)
+	cfg2 := AsType[Config](JSONFeature("checkout-config-array")).GetOr(ctx, client, def)
 	if cfg2 != def {
 		t.Fatalf("expected default on decode failure, got %#v", cfg2)
 	}

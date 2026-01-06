@@ -10,7 +10,7 @@
 //   - JSONFeature also provides EvaluateAny/GetAny/GetAnyOr helpers for any JSON shape (map/slice/string/number/bool/nil).
 //   - JSONFeature provides convenience "cast" helpers (Object/Array/String/Number/Boolean) that reinterpret the same feature key
 //     as other typed wrappers. These helpers do not convert values; mismatches are surfaced at evaluation time.
-//   - TypedFeature (WithType[T]) can decode a feature value into a caller-provided type parameter T.
+//   - TypedFeature (AsType[T]) can decode a feature value into a caller-provided type parameter T.
 //     Missing feature keys return ErrMissingKey. The Get/GetOr helpers treat ErrMissingKey as a normal failure.
 //
 // All Evaluate/Get/GetOr helpers accept optional per-evaluation attributes (growthbook.Attributes) to apply on top of the client's base attributes.
@@ -43,5 +43,5 @@
 //	  Currency string `json:"currency"`
 //	  MaxItems int    `json:"maxItems"`
 //	}
-//	cfg := WithType[Config](JSONFeature("checkout-config")).GetOr(ctx, client, Config{})
+//	cfg := AsType[Config](JSONFeature("checkout-config")).GetOr(ctx, client, Config{})
 package types

@@ -68,18 +68,21 @@ func evaluateWithAttrs(ctx context.Context, client *growthbook.Client, key strin
 	return r, nil
 }
 
+// AsType returns generic TypedFeature from given feature key and your own type.
+func AsType[T any](f featureKey) TypedFeature[T] {
+	return TypedFeature[T]{
+		featureKey: f,
+	}
+}
+
+// TypedFeature is a generic struct wrapper that wraps any type of feature key to provide evaluation methods with your own type
+// Note that evaluation methods of TypedFeature will perform additional JSON round-trip
 type TypedFeature[T any] struct {
 	featureKey
 }
 
 type featureKey interface {
 	Key() string
-}
-
-func WithType[T any](f featureKey) TypedFeature[T] {
-	return TypedFeature[T]{
-		featureKey: f,
-	}
 }
 
 func (f TypedFeature[T]) Key() string {
