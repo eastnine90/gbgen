@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"reflect"
 
 	"github.com/growthbook/growthbook-golang"
@@ -45,12 +46,13 @@ func (f *FeatureResult[T]) GetRaw() *growthbook.FeatureResult {
 }
 
 func evaluateWithAttrs(ctx context.Context, client *growthbook.Client, key string, attrs ...growthbook.Attributes) (result *growthbook.FeatureResult, err error) {
-	for _, attr := range attrs {
-		var next *growthbook.Client
-		if next, err = client.WithAttributes(attr); err != nil {
-			return nil, err
+	if len(attrs) > 0 {
+		merged := make(growthbook.Attributes)
+		for _, attr := range attrs {
+			maps.Copy(merged, attr)
 		}
-		client = next
+		// client.WithAttributes never return err, https://github.com/growthbook/growthbook-golang/blob/73219a4683eb3583c39cf6782e286c1ef8078a0e/client_option.go#L48-L53
+		client, _ = client.WithAttributes(merged)
 	}
 
 	r := client.EvalFeature(ctx, key)

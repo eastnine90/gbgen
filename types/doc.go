@@ -1,9 +1,9 @@
 // Package types contains the public runtime types used by gbgen's generated code.
 //
 // Generated feature variables are thin wrappers around GrowthBook feature keys that provide:
-// - Typed evaluation helpers (e.g. BooleanFeature, StringFeature, NumberFeature, JSONFeature, ArrayFeature)
-// - Structured type mismatch errors (TypeMismatchError) instead of panics
-// - Optional "happy-path" helpers (Get / GetOr) that never return errors
+//   - Typed evaluation helpers (e.g. BooleanFeature, StringFeature, NumberFeature, JSONFeature, ArrayFeature)
+//   - Structured type mismatch errors (TypeMismatchError) instead of panics
+//   - Optional "happy-path" helpers (Get / GetOr) that never return errors
 //
 // JSON features:
 //   - JSONFeature is strict and expects a JSON object (map[string]any).
@@ -14,6 +14,8 @@
 //     Missing feature keys return ErrMissingKey. The Get/GetOr helpers treat ErrMissingKey as a normal failure.
 //
 // All Evaluate/Get/GetOr helpers accept optional per-evaluation attributes (growthbook.Attributes) to apply on top of the client's base attributes.
+// However, by the design of growthbook-golang, any prior attributes of the client would be ignored if optional attributes were passed.
+//
 // Note: numeric values in JSON are decoded as float64 by the GrowthBook Go SDK.
 //
 // Example:

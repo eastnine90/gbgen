@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/growthbook/growthbook-golang"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTypedFeature_Evaluate_OK(t *testing.T) {
@@ -110,4 +111,54 @@ func TestTypedFeature_GetOr_MissingKey_ReturnsDefault(t *testing.T) {
 	if !errors.Is(err, ErrMissingKey) {
 		t.Fatalf("expected errors.Is(err, ErrMissingKey)=true, got false (err=%T %v)", err, err)
 	}
+}
+
+func Test_evaluateWithAttrs(t *testing.T) {
+	ctx := context.Background()
+	key := "dark-mode"
+	client, err := growthbook.NewClient(ctx, growthbook.WithJsonFeatures(`
+{
+    "dark-mode": {
+		"defaultValue": false,
+		"rules": [
+			{
+				"condition": {"a": true, "b": true},
+				"id": "foo",
+				"enabled": true,
+				"type": "force",
+				"force": true
+			}
+		]
+    }
+}
+`))
+	require.NoError(t, err)
+
+	t.Run("Can evaluate with multiple attrs", func(t *testing.T) {
+		result, err := evaluateWithAttrs(ctx, client, key, growthbook.Attributes{"a": true}, growthbook.Attributes{"b": true})
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.True(t, result.On)
+	})
+
+	t.Run("Can evaluate with prior attributes", func(t *testing.T) {
+		client, _ = client.WithAttributes(growthbook.Attributes{"a": true, "b": true})
+		result, err := evaluateWithAttrs(ctx, client, key)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.True(t, result.On)
+	})
+
+	t.Run("Can override prior attributes", func(t *testing.T) {
+		client, _ = client.WithAttributes(growthbook.Attributes{"a": true, "b": true})
+		result, err := evaluateWithAttrs(ctx, client, key)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.True(t, result.On)
+
+		result, err = evaluateWithAttrs(ctx, client, key, growthbook.Attributes{"b": true})
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.False(t, result.On)
+	})
 }
