@@ -43,7 +43,7 @@ func renderTypedFeaturesGo(pkg string, features []featureMeta, emitList bool) ([
 		fmt.Fprintf(&b, "type FeatureKey string\n\n")
 	}
 
-	fmt.Fprintf(&b, "var (\n")
+	fmt.Fprintf(&b, "const (\n")
 	for _, l := range lines {
 		desc := strings.TrimSpace(l.Description)
 		if desc != "" {
